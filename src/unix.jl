@@ -160,11 +160,26 @@ _msync(addr::Ptr, len::Integer, flags::Integer) =
 _munmap(addr::Ptr, len::Integer) =
     ccall(:munmap, Cint, (Ptr{Cvoid}, size_t), addr, len)
 
+# `shm_open` is variadic: `mode` must be passed as a variadic argument (promoted to an
+# `int`), otherwise it ends up in the wrong place on Apple arm64.
 _shm_open(path::AbstractString, flags::Integer, mode::Integer) =
-    ccall(:shm_open, Cint, (Cstring, Cint, mode_t), path, flags, mode)
+    ccall(:shm_open, Cint, (Cstring, Cint, Cuint...), path, flags, mode)
 
 _shm_unlink(path::AbstractString) =
     ccall(:shm_unlink, Cint, (Cstring,), path)
+
+# `stat(RawFD(fd))` cannot be used on POSIX shared memory: on macOS, `fstat` reports no file
+# type for it and some Julia versions then throw "stat returned zero type for a valid
+# path". Julia's own `fstat` wrapper and accessors also avoid depending on the layout of
+# `struct stat`, which differs between platforms.
+function _fstat(fd::Integer)
+    buf = zeros(UInt8, ccall(:jl_sizeof_stat, Int32, ()))
+    r = ccall(:jl_fstat, Int32, (Cint, Ptr{UInt8}), fd, buf)
+    r == 0 || throw_system_error("fstat", -r) # libuv returns -errno
+    return buf
+end
+_stat_size(buf::Vector{UInt8}) = Int(ccall(:jl_stat_size, UInt64, (Ptr{UInt8},), buf))
+_stat_mode(buf::Vector{UInt8}) = ccall(:jl_stat_mode, UInt32, (Ptr{UInt8},), buf)
 
 _sem_open(path::AbstractString, flags::Integer, mode::Integer, value::Unsigned) =
     ccall(:sem_open, Ptr{Cvoid}, (Cstring, Cint, mode_t, Cuint),

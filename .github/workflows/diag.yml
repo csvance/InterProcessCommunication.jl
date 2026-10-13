@@ -1,0 +1,27 @@
+# Temporary diagnostics workflow (not for upstream).
+name: Diag
+on:
+  push:
+    branches: ['macos-shm']
+  workflow_dispatch:
+jobs:
+  diag:
+    name: ${{ matrix.os }} - ${{ matrix.version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: macos-latest, version: '1', arch: aarch64}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Diagnostics
+        run: julia --project=. .github/diag/diag.jl
+      - name: Full suite, all testsets (outer testset collects failures)
+        if: always()
+        run: julia --project=. -e 'using Pkg; Pkg.add("Test"); using Test; @testset "all" begin include("test/runtests.jl") end'

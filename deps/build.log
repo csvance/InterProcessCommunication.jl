@@ -1,0 +1,4 @@
+cc   -o "gendeps" "gendeps.c" 
+rm -f "deps.jl"
+./gendeps >>"deps.jl"
+chmod 444 "deps.jl"

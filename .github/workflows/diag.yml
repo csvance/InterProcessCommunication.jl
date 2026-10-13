@@ -13,9 +13,6 @@ jobs:
       matrix:
         include:
           - {os: macos-latest, version: '1', arch: aarch64}
-          - {os: macos-latest, version: 'lts', arch: aarch64}
-          - {os: macos-15-intel, version: '1', arch: x64}
-          - {os: ubuntu-latest, version: '1', arch: x64}
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3

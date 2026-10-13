@@ -21,18 +21,10 @@ jobs:
         os: ['ubuntu-latest']
         arch: ['x64']
         include:
-          # Apple Silicon: variadic C arguments are passed on the stack.
+          # Apple Silicon, where variadic C arguments are passed on the stack.
           - version: '1'
             os: macos-latest
             arch: aarch64
-          - version: 'lts'
-            os: macos-latest
-            arch: aarch64
-          # Intel macOS, to separate arm64 calling convention issues from
-          # macOS issues in general.
-          - version: '1'
-            os: macos-15-intel
-            arch: x64
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3

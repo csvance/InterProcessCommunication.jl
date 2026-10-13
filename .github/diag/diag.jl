@@ -69,3 +69,16 @@ catch err
 end
 println("  _sizeof_struct_shmid_ds=", I._sizeof_struct_shmid_ds, " segsz off=", I._offsetof_shm_segsz,
         " typeof segsz=", I._typeof_shm_segsz)
+
+hdr("System V shm, volatile=false (no early IPC_RMID)")
+try
+    A = SharedMemory(I.PRIVATE, 1000; volatile=false)
+    id = shmid(A)
+    println("  created id=", id, " sizeof(id)=", sizeof(id))
+    println("  ShmInfo segsz=", ShmInfo(id).segsz)
+    B = SharedMemory(id; readonly=true)
+    println("  reopen by id ok sizeof=", sizeof(B))
+    ccall(:shmctl, Cint, (Cint, Cint, Ptr{Cvoid}), id.value, I.IPC_RMID, C_NULL)
+catch err
+    println("  failed: ", sprint(showerror, err))
+end
